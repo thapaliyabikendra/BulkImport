@@ -251,15 +251,15 @@ paket-files/
 .idea/
 *.sln.iml
 
-# BulkImport
-src/CommonLibs.BulkImport.Web/Logs/*
-src/CommonLibs.BulkImport.Web.Host/Logs/*
-src/CommonLibs.BulkImport.AuthServer/Logs/*
-src/CommonLibs.BulkImport.HttpApi.Host/Logs/*
-src/CommonLibs.BulkImport.HttpApi.HostWithIds/Logs/*
-src/CommonLibs.BulkImport.DbMigrator/Logs/*
-src/CommonLibs.BulkImport.Blazor.Server/Logs/*
-src/CommonLibs.BulkImport.Blazor.Server.Tiered/Logs/*
+# Sample
+src/CommonLibs.BulkImport.Sample.Web/Logs/*
+src/CommonLibs.BulkImport.Sample.Web.Host/Logs/*
+src/CommonLibs.BulkImport.Sample.AuthServer/Logs/*
+src/CommonLibs.BulkImport.Sample.HttpApi.Host/Logs/*
+src/CommonLibs.BulkImport.Sample.HttpApi.HostWithIds/Logs/*
+src/CommonLibs.BulkImport.Sample.DbMigrator/Logs/*
+src/CommonLibs.BulkImport.Sample.Blazor.Server/Logs/*
+src/CommonLibs.BulkImport.Sample.Blazor.Server.Tiered/Logs/*
 
 # Use abp install-libs to restore.
 **/wwwroot/libs/*

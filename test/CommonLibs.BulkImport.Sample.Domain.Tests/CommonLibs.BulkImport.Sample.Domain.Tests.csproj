@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CommonLibs.BulkImport.Sample</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CommonLibs.BulkImport.Sample.Domain\CommonLibs.BulkImport.Sample.Domain.csproj" />
+    <ProjectReference Include="..\CommonLibs.BulkImport.Sample.TestBase\CommonLibs.BulkImport.Sample.TestBase.csproj" />
+  </ItemGroup>
+
+</Project>
