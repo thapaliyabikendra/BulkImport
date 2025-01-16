@@ -6,6 +6,7 @@ using Ganss.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Text;
@@ -25,11 +26,13 @@ public class BulkImportService<TEntity, TKey, TDto> : ApplicationService where T
 
     private readonly IRepository<TEntity, TKey> _repository;
     private readonly IObjectMapper _objectMapper;
+    private readonly BulkImportOptions _options;
 
-    protected BulkImportService(IRepository<TEntity, TKey> repository, IObjectMapper objectMapper)
+    protected BulkImportService(IRepository<TEntity, TKey> repository, IObjectMapper objectMapper, IOptions<BulkImportOptions> options)
     {
         _repository = repository;
         _objectMapper = objectMapper;
+        _options = options.Value;
     }
 
     /// <summary>
@@ -43,15 +46,15 @@ public class BulkImportService<TEntity, TKey, TDto> : ApplicationService where T
         try
         {
             var extension = new FileInfo(input.File.FileName).Extension;
-            if (!BulkImportFileConsts.ExtensionAllowed.Any(x => x.Equals(extension, StringComparison.OrdinalIgnoreCase)))
+            if (!_options.AllowedExtensions.Any(x => x.Equals(extension, StringComparison.OrdinalIgnoreCase)))
             {
-                var msg = "Invalid File Extension. Allowed extensions are: " + string.Join(", ", BulkImportFileConsts.ExtensionAllowed);
+                var msg = "Invalid File Extension. Allowed extensions are: " + string.Join(", ", _options.AllowedExtensions);
                 throw new UserFriendlyException(msg, "400");
             }
 
-            if (input.File.Length > BulkImportFileConsts.FileSizeLimit)
+            if (input.File.Length > _options.FileSizeLimit)
             {
-                var msg = "File Size Exceeded. Maximum allowed size is " + (BulkImportFileConsts.FileSizeLimit / (1024 * 1024)) + " MB.";
+                var msg = "File Size Exceeded. Maximum allowed size is " + (_options.FileSizeLimit / (1024 * 1024)) + " MB.";
                 throw new UserFriendlyException(msg, "400");
             }
 
@@ -163,7 +166,7 @@ public class BulkImportService<TEntity, TKey, TDto> : ApplicationService where T
         try
         {
 
-            if (BulkImportFileConsts.ExtensionAllowed == null || BulkImportFileConsts.ExtensionAllowed.Length == 0)
+            if (_options.AllowedExtensions == null || _options.AllowedExtensions.Length == 0)
             {
                 throw new UserFriendlyException("No allowed file extensions are configured for bulk import.", "400");
             }
