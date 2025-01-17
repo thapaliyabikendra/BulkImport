@@ -31,6 +31,7 @@ using Volo.Abp.Modularity;
 using Volo.Abp.Security.Claims;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.VirtualFileSystem;
+using CommonLibs.BulkImport.Application.Constants;
 
 namespace CommonLibs.BulkImport.Sample;
 
@@ -52,6 +53,8 @@ public class SampleHttpApiHostModule : AbpModule
     {
         var configuration = context.Services.GetConfiguration();
         var hostingEnvironment = context.Services.GetHostingEnvironment();
+
+        Configure<BulkImportOptions>(configuration.GetSection("BulkImport"));
 
         ConfigureConventionalControllers();
         ConfigureAuthentication(context, configuration);
