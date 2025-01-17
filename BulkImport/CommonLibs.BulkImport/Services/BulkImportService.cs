@@ -4,20 +4,16 @@ using CommonLibs.BulkImport.Application.Interfaces;
 using CsvHelper;
 using FluentValidation;
 using Ganss.Excel;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Text;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
-using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.ObjectMapping;
-using Volo.Abp.Users;
 using Volo.Abp.Validation;
 
 namespace CommonLibs.BulkImport.Application.Services;
@@ -97,22 +93,25 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
 
             //var newItems = new List<TEntity>();
 
-            var allValidationErrors = new List<string>();
-            foreach (var item in input)
+            var allValidationErrors = new List<ValidationResult>();
+            foreach (var item in input.Index())
             {
+                var index = item.Index + 1;
                 var validator = new TValidator();
-                var validations = await validator.ValidateAsync(item);
+                var validations = await validator.ValidateAsync(item.Item);
 
                 if (!validations.IsValid)
                 {
-                    allValidationErrors.AddRange(validations.Errors.Select(e => e.ErrorMessage));
+                    var prefixMessage = $"Row {index}: ";
+                    var errors = validations.Errors.Select(e => new ValidationResult(prefixMessage + e.ErrorMessage));
+                    allValidationErrors.AddRange(errors);
                 }
             }
 
-            //if (allValidationErrors.Any())
-            //{
-            //    throw new AbpValidationException(_validationTitle, allValidationErrors);
-            //}
+            if (allValidationErrors.Any())
+            {
+                throw new AbpValidationException(_validationTitle, allValidationErrors);
+            }
 
             var newItems = _objectMapper.Map<List<TDto>, List<TEntity>>(input);
 
