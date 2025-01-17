@@ -2,6 +2,7 @@
 using CommonLibs.BulkImport.Application.Dtos;
 using CommonLibs.BulkImport.Application.Interfaces;
 using CsvHelper;
+using FluentValidation;
 using Ganss.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +20,7 @@ using Volo.Abp.Users;
 using Volo.Abp.Validation;
 
 namespace CommonLibs.BulkImport.Application.Services;
-public class BulkImportService<TEntity, TKey, TDto> : ApplicationService where TEntity : class, IEntity<TKey>,  new() where TDto : IBulkImportDto
+public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationService where TEntity : class, IEntity<TKey>,  new() where TDto : IBulkImportDto where TValidator : AbstractValidator<TDto>, new()
 {
     private readonly string _validationTitle = "Bulk Import Validations";
 
@@ -93,6 +94,23 @@ public class BulkImportService<TEntity, TKey, TDto> : ApplicationService where T
 
             //var newItems = new List<TEntity>();
 
+            var allValidationErrors = new List<string>();
+            foreach (var item in input)
+            {
+                var validator = new TValidator();
+                var validations = await validator.ValidateAsync(item);
+
+                if (!validations.IsValid)
+                {
+                    allValidationErrors.AddRange(validations.Errors.Select(e => e.ErrorMessage));
+                }
+            }
+
+            //if (allValidationErrors.Any())
+            //{
+            //    throw new AbpValidationException(_validationTitle, allValidationErrors);
+            //}
+
             var newItems = _objectMapper.Map<List<TDto>, List<TEntity>>(input);
 
             if (newItems.Count != 0)
@@ -106,12 +124,11 @@ public class BulkImportService<TEntity, TKey, TDto> : ApplicationService where T
         }
     }
 
-    public async Task<List<TDto>> GetDataAsync(MemoryStream stream, string extension)
+    private static async Task<List<TDto>> GetDataAsync(MemoryStream stream, string extension)
     {
         try
         {
             stream.Position = 0;
-
             if (extension.Equals(FileTypeConsts.CsvType, StringComparison.OrdinalIgnoreCase))
             {
                 using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
@@ -131,7 +148,12 @@ public class BulkImportService<TEntity, TKey, TDto> : ApplicationService where T
             else if (extension.Equals(FileTypeConsts.XlsxType, StringComparison.OrdinalIgnoreCase))
             {
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-                var importer = new ExcelMapper(stream);
+                var importer = new ExcelMapper(stream)
+                {
+                    SkipBlankCells = true,
+                    HeaderRow = true,
+                };
+
                 var records = importer.Fetch<TDto>()
                 .Where(emp => !string.IsNullOrWhiteSpace(emp.DataIdentifier))
                 .ToList();
