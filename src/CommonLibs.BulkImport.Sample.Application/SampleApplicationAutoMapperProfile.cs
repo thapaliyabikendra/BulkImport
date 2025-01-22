@@ -12,7 +12,6 @@ public class SampleApplicationAutoMapperProfile : Profile
          * Alternatively, you can split your mapping configurations
          * into multiple profile classes for a better organization. */
 
-        CreateMap<StudentDto, Student>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.DataIdentifier));
+        CreateMap<StudentDto, Student>();
     }
 }

@@ -1,6 +1,7 @@
-﻿using CommonLibs.BulkImport.Application.Constants;
+﻿using CommonLibs.BulkImport.Application.Attributes;
+using CommonLibs.BulkImport.Application.Constants;
 using CommonLibs.BulkImport.Application.Dtos;
-using CommonLibs.BulkImport.Application.Interfaces;
+using CommonLibs.BulkImport.Application.Extensions;
 using CsvHelper;
 using FluentValidation;
 using Ganss.Excel;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using Volo.Abp;
 using Volo.Abp.Application.Services;
@@ -17,7 +20,7 @@ using Volo.Abp.ObjectMapping;
 using Volo.Abp.Validation;
 
 namespace CommonLibs.BulkImport.Application.Services;
-public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationService where TEntity : class, IEntity<TKey>,  new() where TDto : IBulkImportDto where TValidator : AbstractValidator<TDto>, new()
+public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationService where TEntity : class, IEntity<TKey>,  new() where TValidator : AbstractValidator<TDto>, new()
 {
     private readonly string _validationTitle = "Bulk Import Validations";
 
@@ -126,10 +129,15 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
         }
     }
 
-    private static async Task<List<TDto>> GetDataAsync(MemoryStream stream, string extension)
+    private async Task<List<TDto>> GetDataAsync(MemoryStream stream, string extension)
     {
         try
         {
+            // Check property-level attribute
+            var type = typeof(TDto);
+            var property = type.GetProperties()
+                                          .FirstOrDefault(p => p.GetCustomAttributes(typeof(UniqueIdentifierAttribute), false).Any());
+
             stream.Position = 0;
             if (extension.Equals(FileTypeConsts.CsvType, StringComparison.OrdinalIgnoreCase))
             {
@@ -140,12 +148,9 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
                     HeaderValidated = null,
                     MissingFieldFound = null,
                 });
-                var records = csv.GetRecords<TDto>()
-                .Where(emp => !string.IsNullOrWhiteSpace(emp.DataIdentifier))
-                .ToList();
-
-                return records;
-
+                var records = csv.GetRecords<TDto>();
+                records = FilterByUniqueIdentifier(records, property.Name);
+                return records.ToList();
             }
             else if (extension.Equals(FileTypeConsts.XlsxType, StringComparison.OrdinalIgnoreCase))
             {
@@ -156,11 +161,19 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
                     HeaderRow = true,
                 };
 
-                var records = importer.Fetch<TDto>()
-                .Where(emp => !string.IsNullOrWhiteSpace(emp.DataIdentifier))
-                .ToList();
+                var records = importer.Fetch<TDto>();
+                //.FilterByUniqueIdentifier(property.Name)
+                //.ToList();
+                if (records != null)
+                {
+                    records = FilterByUniqueIdentifier(records, property.Name);
+                }
+                else
+                {
+                    throw new UserFriendlyException("Failed to fetch Excel data.");
+                }
 
-                return records;
+                return records.ToList();
             }
             else
             {
@@ -204,5 +217,34 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
         {
             throw new UserFriendlyException("An error occurred while fetching the allowed types for bulk import.", "500");
         }
+    }
+
+    public IEnumerable<TDto> FilterByUniqueIdentifier<TDto>(IEnumerable<TDto> source, string fieldName)
+    {
+        // Define the parameter for the expression (e.g., s => s.DataIdentifier)
+        ParameterExpression parameter = Expression.Parameter(typeof(TDto), "s");
+
+        // Get the property to be filtered using reflection
+        PropertyInfo property = typeof(TDto).GetProperty(fieldName);
+
+        // Ensure the property is of type string before proceeding
+        if (property == null || property.PropertyType != typeof(string))
+        {
+            throw new ArgumentException($"The field '{fieldName}' is not a string property.");
+        }
+
+        // Build the expression to check if the property is not null or whitespace
+        Expression propertyAccess = Expression.Property(parameter, property);
+
+        // Reference the static method IsNullOrWhiteSpace from the string class
+        MethodInfo isNullOrWhiteSpaceMethod = typeof(string).GetMethod("IsNullOrWhiteSpace", new[] { typeof(string) });
+        Expression callIsNullOrWhiteSpace = Expression.Call(null, isNullOrWhiteSpaceMethod, propertyAccess);
+
+        // Create a lambda expression that returns `!IsNullOrWhiteSpace(property)`
+        Expression negation = Expression.Not(callIsNullOrWhiteSpace);
+        Expression<Func<TDto, bool>> lambda = Expression.Lambda<Func<TDto, bool>>(negation, parameter);
+
+        // Apply the filter dynamically using LINQ's Where method
+        return source.Where(lambda.Compile());
     }
 }

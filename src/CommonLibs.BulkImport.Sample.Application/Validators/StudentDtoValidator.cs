@@ -9,7 +9,7 @@ public class StudentDtoValidator : AbstractValidator<StudentDto>
 {
     public StudentDtoValidator()
     {
-        RuleFor(x => x.DataIdentifier)
+        RuleFor(x => x.Name)
             .NotEmpty().WithMessage("The 'Name' field is required.")
             .MaximumLength(50).WithMessage("The 'Name' field cannot exceed 50 characters.");
 
