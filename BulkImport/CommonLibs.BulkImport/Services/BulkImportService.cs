@@ -204,7 +204,7 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
             {
                 throw new UserFriendlyException("No allowed file extensions are configured for bulk import.", "400");
             }
-            var allowedTypes = BulkImportFileConsts.ExtensionAllowed;
+            var allowedTypes = _options.AllowedExtensions;
 
 
             return await Task.FromResult(allowedTypes);
