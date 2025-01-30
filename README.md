@@ -7,49 +7,45 @@ BulkImport is a dynamic and reusable bulk import service that allows bulk data i
 
 * Supports CSV and Excel (.xlsx) file formats.
 
-Configurable file size limit and allowed file extensions.
+* Configurable file size limit and allowed file extensions.
 
-Validation using FluentValidation.
+* Validation using FluentValidation.
 
-Data filtering by unique identifiers.
+* Data filtering by unique identifiers.
 
-Asynchronous processing for efficient performance.
+* Asynchronous processing for efficient performance.
 
-Exception handling for user-friendly error messages.
+* Exception handling for user-friendly error messages.
 
-Technologies Used
+## Technologies Used
 
-.NET Core (ASP.NET Core Application Services)
+* .NET Core (ASP.NET Core Application Services)
 
-CsvHelper (For CSV parsing)
+* CsvHelper (For CSV parsing)
 
-FluentValidation (For validation)
+* FluentValidation (For validation)
 
-Ganss.Excel (For Excel file handling)
+* Ganss.Excel (For Excel file handling)
 
-Volo.Abp (For domain-driven development and repository handling)
+* Volo.Abp (For domain-driven development and repository handling)
 
-Installation
+## Installation
 
-Clone the repository:
+1. Clone the repository:
 
-git clone https://github.com/yourusername/bulkimport.git
+   git clone https://github.com/yourusername/bulkimport.git
 
-Navigate to the project directory:
+2. Navigate to the project directory:
 
-cd bulkimport
+   cd bulkimport
 
-Install dependencies:
-
-dotnet restore
-
-Configuration
+## Configuration
 
 The BulkImportOptions class allows customization of the import settings. You can configure:
 
-Allowed file extensions
+* Allowed file extensions
 
-Maximum file size
+* Maximum file size
 
 Example:
 
@@ -58,38 +54,22 @@ Example:
   "FileSizeLimit": 10485760  // 10 MB
 }
 
-Usage
+## Usage
 
 1. Inject the Service
 
-public class YourService : IYourService
+public class YourService : BulkImportService<MyEntity, Guid, MyDto, MyValidator>
 {
-    private readonly BulkImportService<MyEntity, Guid, MyDto, MyValidator> _bulkImportService;
-    
-    public YourService(BulkImportService<MyEntity, Guid, MyDto, MyValidator> bulkImportService)
+    public YourService(IRepository<MyEntity, Guid> repository, IObjectMapper objectMapper, IOptions<BulkImportOptions> options) : base(repository, objectMapper, options)
     {
-        _bulkImportService = bulkImportService;
     }
 }
 
-2. Call the Bulk Import Method
-
-[HttpPost("bulk-import")]
-public async Task<IActionResult> ImportFile([FromForm] BulkImportFileDto input)
-{
-    await _bulkImportService.BulkImportAsync(input);
-    return Ok("File imported successfully.");
-}
-
-3. Retrieve Allowed File Types
-
-var allowedTypes = await _bulkImportService.GetBulkImportAllowedTypesAsync();
-
-Validation
+## Validation
 
 The service validates each row before processing. If validation fails, an AbpValidationException is thrown with detailed error messages.
 
-Exception Handling
+## Exception Handling
 
 Invalid File Extension: Ensures only allowed file formats are used.
 
@@ -99,22 +79,10 @@ Empty File Handling: Detects if the uploaded file has no data.
 
 Validation Errors: Reports validation issues per row.
 
-License
+## License
 
 This project is licensed under the MIT License.
 
-Contributing
+## Contact
 
-Contributions are welcome! Please follow these steps:
-
-Fork the repository.
-
-Create a new branch (feature/new-feature).
-
-Commit your changes.
-
-Push to the branch and create a Pull Request.
-
-Contact
-
-For any issues, please open an issue on GitHub or contact the maintainer at your.email@example.com.
+For any issues, please open an issue on GitHub or contact the maintainer at bikendra.thapayliya@amniltech.com.
