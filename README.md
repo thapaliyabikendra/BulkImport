@@ -71,13 +71,13 @@ The service validates each row before processing. If validation fails, an AbpVal
 
 ## Exception Handling
 
-Invalid File Extension: Ensures only allowed file formats are used.
+* Invalid File Extension: Ensures only allowed file formats are used.
 
-File Size Exceeded: Restricts oversized files.
+* File Size Exceeded: Restricts oversized files.
 
-Empty File Handling: Detects if the uploaded file has no data.
+* Empty File Handling: Detects if the uploaded file has no data.
 
-Validation Errors: Reports validation issues per row.
+* Validation Errors: Reports validation issues per row.
 
 ## License
 
