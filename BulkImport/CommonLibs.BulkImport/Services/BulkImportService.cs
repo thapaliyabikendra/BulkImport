@@ -1,12 +1,16 @@
 ﻿using CommonLibs.BulkImport.Application.Attributes;
 using CommonLibs.BulkImport.Application.Constants;
+using CommonLibs.BulkImport.Application.Contracts;
 using CommonLibs.BulkImport.Application.Dtos;
 using CommonLibs.BulkImport.Application.Extensions;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
 using CsvHelper;
 using FluentValidation;
 using Ganss.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq.Expressions;
@@ -18,6 +22,7 @@ using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Validation;
+using System.Drawing;
 
 namespace CommonLibs.BulkImport.Application.Services;
 public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationService where TEntity : class, IEntity<TKey>,  new() where TValidator : AbstractValidator<TDto>, new()
@@ -27,12 +32,17 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
     private readonly IRepository<TEntity, TKey> _repository;
     private readonly IObjectMapper _objectMapper;
     private readonly BulkImportOptions _options;
+    private readonly IMappingProvider<TDto> _mappingProvider;
 
-    protected BulkImportService(IRepository<TEntity, TKey> repository, IObjectMapper objectMapper, IOptions<BulkImportOptions> options)
+    protected BulkImportService(IRepository<TEntity, TKey> repository, 
+        IObjectMapper objectMapper, 
+        IOptions<BulkImportOptions> options,
+        IMappingProvider<TDto> mappingProvider)
     {
         _repository = repository;
         _objectMapper = objectMapper;
         _options = options.Value;
+        _mappingProvider = mappingProvider;
     }
 
     /// <summary>
@@ -246,5 +256,61 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
 
         // Apply the filter dynamically using LINQ's Where method
         return source.Where(lambda.Compile());
+    }
+    public async Task<byte[]> GenerateTemplateAsync()
+    {
+        try
+        {
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            using var package = new ExcelPackage();
+            package.Workbook.Properties.Author = "Bulk Import System";
+
+            var ws = package.Workbook.Worksheets.Add("Template");
+            ws.Name = "Template";
+            ws.Cells.Style.Font.Size = 11;
+            ws.Cells.Style.Font.Name = "Calibri";
+
+            var mappings = _mappingProvider.GetMappings();
+            if (mappings == null || mappings.Count == 0)
+            {
+                throw new InvalidOperationException("No mapping configuration found.");
+            }
+
+            var headers = mappings.Keys.ToList();
+            int colIndex = 1;
+            int rowIndex = 1;
+
+            // Write Headers
+            foreach (var header in headers)
+            {
+                var cell = ws.Cells[rowIndex, colIndex];
+
+                var fill = cell.Style.Fill;
+                fill.PatternType = ExcelFillStyle.Solid;
+                fill.BackgroundColor.SetColor(Color.LightBlue);
+
+                var border = cell.Style.Border;
+                border.Bottom.Style =
+                    border.Top.Style =
+                        border.Left.Style =
+                            border.Right.Style = ExcelBorderStyle.Thin;
+
+                cell.Value = header;
+                colIndex++;
+            }
+
+            // Apply AutoFilter and Column Width
+            using (ExcelRange autoFilterCells = ws.Cells[1, 1, 1, headers.Count])
+            {
+                autoFilterCells.AutoFilter = true;
+                autoFilterCells.AutoFitColumns();
+            }
+
+            return await package.GetAsByteArrayAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new UserFriendlyException($"Error generating template: {ex.Message}");
+        }
     }
 }

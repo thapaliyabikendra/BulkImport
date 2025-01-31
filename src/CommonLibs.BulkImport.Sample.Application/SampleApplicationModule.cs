@@ -1,4 +1,8 @@
 ﻿using CommonLibs.BulkImport.Application;
+using CommonLibs.BulkImport.Application.Contracts;
+using CommonLibs.BulkImport.Sample.Dtos;
+using CommonLibs.BulkImport.Sample.Mappings;
+using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
 using Volo.Abp.FeatureManagement;
@@ -29,5 +33,8 @@ public class SampleApplicationModule : AbpModule
         {
             options.AddMaps<SampleApplicationModule>();
         });
+        // Register Mapping Providers
+        context.Services.AddTransient<IMappingProvider<StudentDto>, StudentMappingProvider>();
+
     }
 }
