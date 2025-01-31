@@ -32,6 +32,8 @@ using Volo.Abp.Security.Claims;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.VirtualFileSystem;
 using CommonLibs.BulkImport.Application.Extensions;
+using Volo.Abp.BlobStoring;
+using Volo.Abp.BlobStoring.FileSystem;
 
 namespace CommonLibs.BulkImport.Sample;
 
@@ -47,7 +49,7 @@ namespace CommonLibs.BulkImport.Sample;
     typeof(AbpAspNetCoreSerilogModule),
     typeof(AbpSwashbuckleModule)
 )]
-public class SampleHttpApiHostModule : AbpModule
+    public class SampleHttpApiHostModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)
     {

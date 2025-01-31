@@ -12,6 +12,7 @@ namespace CommonLibs.BulkImport.Application;
 [DependsOn(new Type[]
 {
     typeof(AbpDddApplicationModule),
+    typeof(AbpBlobStoringFileSystemModule)
 })]
 public class BulkImportApplicationModule : AbpModule
 {
@@ -37,6 +38,6 @@ public class BulkImportApplicationModule : AbpModule
                 });
             });
         });
-        context.Services.AddScoped<IBlobContainerFactory, BlobContainerFactory>();
+        //context.Services.AddScoped<IBlobContainerFactory, BlobContainerFactory>();
     }
 }
