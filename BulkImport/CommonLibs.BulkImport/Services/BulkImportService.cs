@@ -23,9 +23,13 @@ using Volo.Abp.Domain.Repositories;
 using Volo.Abp.ObjectMapping;
 using Volo.Abp.Validation;
 using System.Drawing;
+using Volo.Abp.BlobStoring;
+using Volo.Abp.BlobStoring.FileSystem;
+
 
 namespace CommonLibs.BulkImport.Application.Services;
-public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationService where TEntity : class, IEntity<TKey>,  new() where TValidator : AbstractValidator<TDto>, new()
+public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationService where TEntity : class, IEntity<TKey>, 
+    new() where TValidator : AbstractValidator<TDto>, new()
 {
     private readonly string _validationTitle = "Bulk Import Validations";
 
@@ -33,16 +37,19 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
     private readonly IObjectMapper _objectMapper;
     private readonly BulkImportOptions _options;
     private readonly IMappingProvider<TDto> _mappingProvider;
+    private readonly IBlobContainer _blobContainer;
 
     protected BulkImportService(IRepository<TEntity, TKey> repository, 
         IObjectMapper objectMapper, 
         IOptions<BulkImportOptions> options,
-        IMappingProvider<TDto> mappingProvider)
+        IMappingProvider<TDto> mappingProvider,
+        IBlobContainerFactory blobContainerFactory)
     {
         _repository = repository;
         _objectMapper = objectMapper;
         _options = options.Value;
         _mappingProvider = mappingProvider;
+        _blobContainer = blobContainerFactory.Create("test-blob");
     }
 
     /// <summary>
@@ -257,7 +264,7 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
         // Apply the filter dynamically using LINQ's Where method
         return source.Where(lambda.Compile());
     }
-    public async Task<byte[]> GenerateTemplateAsync()
+    public async Task<String> GetTemplateAsync()
     {
         try
         {
@@ -306,7 +313,16 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
                 autoFilterCells.AutoFitColumns();
             }
 
-            return await package.GetAsByteArrayAsync();
+            // Generate the Excel template as a byte array
+            byte[] excelBytes = await package.GetAsByteArrayAsync();
+
+            // Define a unique file name
+            string fileName = $"Template_{Guid.NewGuid()}.xlsx";
+
+            // Save the file to blob storage
+            await _blobContainer.SaveAsync(fileName, excelBytes, true);
+
+            return fileName; // Return file name for reference
         }
         catch (Exception ex)
         {

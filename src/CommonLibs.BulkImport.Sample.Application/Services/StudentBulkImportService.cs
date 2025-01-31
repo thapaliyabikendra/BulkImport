@@ -8,11 +8,16 @@ using System;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.ObjectMapping;
 using CommonLibs.BulkImport.Application.Contracts;
+using Volo.Abp.BlobStoring;
+using Volo.Abp.BlobStoring.FileSystem;
 
 namespace CommonLibs.BulkImport.Sample.Services;
 public class StudentBulkImportService : BulkImportService<Student, Guid, StudentDto, StudentDtoValidator>
 {
-    public StudentBulkImportService(IRepository<Student, Guid> repository, IObjectMapper objectMapper, IOptions<BulkImportOptions> options, IMappingProvider<StudentDto> mappingProvider) : base(repository, objectMapper, options, mappingProvider)
+    public StudentBulkImportService(IRepository<Student, Guid> repository,
+        IObjectMapper objectMapper, IOptions<BulkImportOptions> options, 
+        IMappingProvider<StudentDto> mappingProvider,
+        IBlobContainerFactory blobContainerFactory) : base(repository, objectMapper, options, mappingProvider, blobContainerFactory)
     {
     }
 }
