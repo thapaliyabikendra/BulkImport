@@ -1,7 +1,7 @@
 # BulkImport
 
 ## About this solution
-BulkImport is a dynamic and reusable bulk import service that allows bulk data import operations to be handled in different projects. It supports CSV and Excel file formats, providing validation, unique filtering, and repository persistence. All the fundamental ABP modules have already been installed. 
+BulkImport is a dynamic and reusable bulk import service that allows bulk data import operations to be seamlessly integrated into different projects. It supports CSV and Excel (.xlsx) file formats, providing validation, unique filtering, and repository persistence features. All the fundamental ABP modules have already been installed, making it highly compatible with ABP-based projects. 
 
 ## Features
 
@@ -9,13 +9,15 @@ BulkImport is a dynamic and reusable bulk import service that allows bulk data i
 
 * Configurable file size limit and allowed file extensions.
 
-* Validation using FluentValidation.
+* Data Validation using FluentValidation.
 
-* Data filtering by unique identifiers.
+* Unique identifier filtering to prevent duplicate data entries.
 
-* Asynchronous processing for efficient performance.
+* Asynchronous processing for optimized performance.
 
 * Exception handling for user-friendly error messages.
+
+* Fully compatible with ABP Framework for Domain-Driven Design.
 
 ## Technologies Used
 
@@ -23,11 +25,15 @@ BulkImport is a dynamic and reusable bulk import service that allows bulk data i
 
 * CsvHelper (For CSV parsing)
 
-* FluentValidation (For validation)
+* FluentValidation (For data validation)
 
 * Ganss.Excel (For Excel file handling)
 
-* Volo.Abp (For domain-driven development and repository handling)
+* Volo.Abp (for domain-driven development and repository management)
+
+* OfficeOpenXml (for Excel processing)
+
+* Blob Storing (ABP Blob Storage & File System Blob Provider)
 
 ## Installation
 
@@ -47,11 +53,14 @@ The BulkImportOptions class allows customization of the import settings. You can
 
 * Maximum file size
 
+* BlobContainer name
+
 Example:
 
 {
   "AllowedExtensions": [".csv", ".xlsx"],
-  "FileSizeLimit": 10485760  // 10 MB
+  "FileSizeLimit": 10485760  // 10 MB,
+  "BlobContainerName": "bulk-import-files"
 }
 
 ## Usage
@@ -60,7 +69,8 @@ Example:
 
 public class YourService : BulkImportService<MyEntity, Guid, MyDto, MyValidator>
 {
-    public YourService(IRepository<MyEntity, Guid> repository, IObjectMapper objectMapper, IOptions<BulkImportOptions> options) : base(repository, objectMapper, options)
+    public YourService(IRepository<MyEntity, Guid> repository, IObjectMapper objectMapper, IOptions<BulkImportOptions> options, IMappingProvider<MyDto> mappingProvider,
+    IBlobContainerFactory blobContainerFactory) : base(repository, objectMapper, options, mappingProvider, blobContainerFactory)
     {
     }
 }
