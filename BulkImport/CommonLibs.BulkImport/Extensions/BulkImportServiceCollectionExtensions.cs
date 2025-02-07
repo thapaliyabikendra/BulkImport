@@ -26,6 +26,7 @@ public static class BulkImportServiceCollectionExtensions
                 // Use default values if appsettings.json does not specify BulkImport
                 options.FileSizeLimit = 10485760;
                 options.AllowedExtensions = new string[] { ".csv", ".xlsx" };
+                options.BlobContainerName = "test-blob";
             }
         });
 

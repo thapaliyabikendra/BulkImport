@@ -39,17 +39,18 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
     private readonly IMappingProvider<TDto> _mappingProvider;
     private readonly IBlobContainer _blobContainer;
 
-    protected BulkImportService(IRepository<TEntity, TKey> repository, 
-        IObjectMapper objectMapper, 
+    protected BulkImportService(IRepository<TEntity, TKey> repository,
+        IObjectMapper objectMapper,
         IOptions<BulkImportOptions> options,
         IMappingProvider<TDto> mappingProvider,
-        IBlobContainerFactory blobContainerFactory)
+        IBlobContainerFactory blobContainerFactory
+        )
     {
         _repository = repository;
         _objectMapper = objectMapper;
         _options = options.Value;
         _mappingProvider = mappingProvider;
-        _blobContainer = blobContainerFactory.Create("test-blob");
+        _blobContainer = blobContainerFactory.Create(_options.BlobContainerName);
     }
 
     /// <summary>
@@ -63,17 +64,7 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
         try
         {
             var extension = new FileInfo(input.File.FileName).Extension;
-            if (!_options.AllowedExtensions.Any(x => x.Equals(extension, StringComparison.OrdinalIgnoreCase)))
-            {
-                var msg = "Invalid File Extension. Allowed extensions are: " + string.Join(", ", _options.AllowedExtensions);
-                throw new UserFriendlyException(msg, "400");
-            }
-
-            if (input.File.Length > _options.FileSizeLimit)
-            {
-                var msg = "File Size Exceeded. Maximum allowed size is " + (_options.FileSizeLimit / (1024 * 1024)) + " MB.";
-                throw new UserFriendlyException(msg, "400");
-            }
+            ValidateFile(input, extension);
 
             using var stream = new MemoryStream();
             await input.File.CopyToAsync(stream);
@@ -328,5 +319,13 @@ public class BulkImportService<TEntity, TKey, TDto, TValidator> : ApplicationSer
         {
             throw new UserFriendlyException($"Error generating template: {ex.Message}");
         }
+    }
+    private void ValidateFile(BulkImportFileDto input, string extension)
+    {
+        if (!_options.AllowedExtensions.Any(x => x.Equals(extension, StringComparison.OrdinalIgnoreCase)))
+            throw new UserFriendlyException($"Invalid file extension. Allowed extensions: {string.Join(", ", _options.AllowedExtensions)}", "400");
+
+        if (input.File.Length > _options.FileSizeLimit)
+            throw new UserFriendlyException($"File size exceeded. Max allowed: {_options.FileSizeLimit / (1024 * 1024)} MB.", "400");
     }
 }
